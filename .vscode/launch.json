@@ -5,7 +5,7 @@
       "name": "C/C++ Runner: Debug Session",
       "type": "cppdbg",
       "request": "launch",
-      "args": [],
+      "args": ["<", "${workspaceFolder}/pt1/tsA_case1_input.txt"],
       "stopAtEntry": false,
       "externalConsole": true,
       "cwd": "c:/Users/emva5/cpp-transport-catalogue/transport-catalogue",

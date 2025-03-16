@@ -12,4 +12,6 @@ using namespace transport_catalogue::database;
 void ParseAndPrintStat(const TransportCatalogue& transport_catalogue, std::string_view request,
                        std::ostream& output);
 
+void ReadStatRequests(const TransportCatalogue& transport_catalogue, std::istream& input, std::ostream& output);
+
 }  // namespace transport_catalogue::retrieving

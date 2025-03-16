@@ -1,4 +1,3 @@
-#include "geo.h"
 #include "stat_reader.h"
 
 #include <iomanip>
@@ -10,43 +9,35 @@ using namespace std;
 
 namespace transport_catalogue::retrieving {
 
-using namespace transport_catalogue::geo;
-
-void ParseAndPrintStat(const TransportCatalogue& transport_catalogue, string_view request,
-                       ostream& output) {
+void ParseAndPrintStat(const TransportCatalogue& catalogue, string_view request, ostream& output) {
     if (request.substr(0, 3) == "Bus"s) {
-        string name(request.substr(4));
-        auto route = transport_catalogue.GetRouteInfo(name);
+        string_view name(request.substr(4));
+        auto route_info = catalogue.GetRouteInfo(name);
         
-        if (!route.has_value()) {
+        if (!route_info.has_value()) {
             output << "Bus "s << name << ": not found"s << endl;
             return;
         }
 
-        const auto& stops = route->stops;
-        unordered_set<string_view> unique_stops;
-        double length = 0.;
+        const BusInfo& info = route_info.value();
 
-        for (size_t i = 0; i < stops.size() - 1; ++i) {
-            length += ComputeDistance(stops[i]->coords, stops[i + 1]->coords);
-            unique_stops.insert(stops[i]->name);
-        }
-
-        unique_stops.insert(stops.back()->name);
-
-        output << "Bus "s << name << ": "s << stops.size() << " stops on route, "s
-            << unique_stops.size() << " unique stops, "s
-            << fixed << setprecision(6) << length << " route length"s << endl;
+        output << "Bus "s << info.name << ": "s << info.stops_count << " stops on route, "s
+            << info.unique_stops_count << " unique stops, "s
+            << fixed << setprecision(6) << info.route_length << " route length"s << endl;
     }
     
     if (request.substr(0, 4) == "Stop"s) {
-        string name(request.substr(5));
-        auto buses = transport_catalogue.GetBusesForStop(name);
+        string_view name(request.substr(5));
+        auto buses_ptr = catalogue.GetBusesForStop(name);
 
-        if (!buses.has_value()) {
+        if (!buses_ptr.has_value()) {
             output << "Stop "s << name << ": not found"s << endl;
             return;
-        } else if (buses->empty()) {
+        }
+        
+        const set<string>* buses = buses_ptr.value();
+
+        if (buses->empty()) {
             output << "Stop "s << name << ": no buses"s << endl;
             return;
         }
@@ -58,6 +49,17 @@ void ParseAndPrintStat(const TransportCatalogue& transport_catalogue, string_vie
         }
 
         output << endl;
+    }
+}
+
+void ReadStatRequests(const TransportCatalogue& catalogue, istream& input, ostream& output) {
+    int stat_request_count;
+    input >> stat_request_count >> ws;
+    
+    for (int i = 0; i < stat_request_count; ++i) {
+        string line;
+        getline(input, line);
+        ParseAndPrintStat(catalogue, line, output);
     }
 }
 

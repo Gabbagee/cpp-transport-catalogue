@@ -13,7 +13,7 @@ using namespace transport_catalogue::geo;
 /**
  * Парсит строку вида "10.123,  -30.1837" и возвращает пару координат (широта, долгота)
  */
-Coordinates ParseCoordinates(std::string_view str) {
+Coordinates ParseCoordinates(string_view str) {
     static const double nan = std::nan("");
 
     auto not_space = str.find_first_not_of(' ');
@@ -25,8 +25,8 @@ Coordinates ParseCoordinates(std::string_view str) {
 
     auto not_space2 = str.find_first_not_of(' ', comma + 1);
 
-    double lat = std::stod(std::string(str.substr(not_space, comma - not_space)));
-    double lng = std::stod(std::string(str.substr(not_space2)));
+    double lat = stod(string(str.substr(not_space, comma - not_space)));
+    double lng = stod(string(str.substr(not_space2)));
 
     return {lat, lng};
 }
@@ -34,7 +34,7 @@ Coordinates ParseCoordinates(std::string_view str) {
 /**
  * Удаляет пробелы в начале и конце строки
  */
-std::string_view Trim(std::string_view string) {
+string_view Trim(string_view string) {
     const auto start = string.find_first_not_of(' ');
     if (start == string.npos) {
         return {};
@@ -45,8 +45,8 @@ std::string_view Trim(std::string_view string) {
 /**
  * Разбивает строку string на n строк, с помощью указанного символа-разделителя delim
  */
-std::vector<std::string_view> Split(std::string_view string, char delim) {
-    std::vector<std::string_view> result;
+vector<string_view> Split(string_view string, char delim) {
+    vector<string_view> result;
 
     size_t pos = 0;
     while ((pos = string.find_first_not_of(' ', pos)) < string.length()) {
@@ -68,19 +68,19 @@ std::vector<std::string_view> Split(std::string_view string, char delim) {
  * Для кольцевого маршрута (A>B>C>A) возвращает массив названий остановок [A,B,C,A]
  * Для некольцевого маршрута (A-B-C-D) возвращает массив названий остановок [A,B,C,D,C,B,A]
  */
-std::vector<std::string_view> ParseRoute(std::string_view route) {
+vector<string_view> ParseRoute(string_view route) {
     if (route.find('>') != route.npos) {
         return Split(route, '>');
     }
 
     auto stops = Split(route, '-');
-    std::vector<std::string_view> results(stops.begin(), stops.end());
-    results.insert(results.end(), std::next(stops.rbegin()), stops.rend());
+    vector<string_view> results(stops.begin(), stops.end());
+    results.insert(results.end(), next(stops.rbegin()), stops.rend());
 
     return results;
 }
 
-CommandDescription ParseCommandDescription(std::string_view line) {
+CommandDescription ParseCommandDescription(string_view line) {
     auto colon_pos = line.find(':');
     if (colon_pos == line.npos) {
         return {};
@@ -96,15 +96,15 @@ CommandDescription ParseCommandDescription(std::string_view line) {
         return {};
     }
 
-    return {std::string(line.substr(0, space_pos)),
-            std::string(line.substr(not_space, colon_pos - not_space)),
-            std::string(line.substr(colon_pos + 1))};
+    return {string(line.substr(0, space_pos)),
+            string(line.substr(not_space, colon_pos - not_space)),
+            string(line.substr(colon_pos + 1))};
 }
 
-void InputReader::ParseLine(std::string_view line) {
+void InputReader::ParseLine(string_view line) {
     auto command_description = ParseCommandDescription(line);
     if (command_description) {
-        commands_.push_back(std::move(command_description));
+        commands_.push_back(move(command_description));
     }
 }
 
@@ -123,6 +123,18 @@ void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) 
             catalogue.AddRoute(command.id, stops, is_circular);
         }
     }
+}
+
+void InputReader::ReadBaseRequests(TransportCatalogue& catalogue, istream& input) {
+    int base_request_count;
+    input >> base_request_count >> ws;
+
+    for (int i = 0; i < base_request_count; ++i) {
+            string line;
+            getline(input, line);
+            ParseLine(line);
+        }
+    ApplyCommands(catalogue);
 }
 
 }  // namespace transport_catalogue::filling
