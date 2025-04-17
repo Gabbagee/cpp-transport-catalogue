@@ -10,7 +10,7 @@ using namespace transport_catalogue;
 int main() {
     database::TransportCatalogue catalogue;
     filling::InputReader reader;
-
+    
     reader.ReadBaseRequests(catalogue, cin);
     retrieving::ReadStatRequests(catalogue, cin, cout);
 }

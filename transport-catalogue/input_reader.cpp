@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iterator>
+#include <utility>
 
 using namespace std;
 
@@ -31,6 +32,29 @@ Coordinates ParseCoordinates(string_view str) {
     return {lat, lng};
 }
 
+vector<pair<string_view, int>> ParseDistances(string_view string) {
+    vector<pair<string_view, int>> dists;
+
+    size_t pos = 0;
+    while ((pos = string.find_first_not_of(' ', pos)) < string.length()) {
+        auto unit_pos = string.find("m to "s, pos);
+        int dist = stoi(std::string(string.substr(pos, unit_pos - pos)));
+        auto stop_pos = unit_pos + 5;
+        auto delim_pos = string.find(',', stop_pos);
+        
+        if (delim_pos == string_view::npos) {
+            delim_pos = string.size();
+        }
+
+        auto stop_name = string.substr(stop_pos, delim_pos - stop_pos);
+        dists.emplace_back(stop_name, dist);
+
+        pos = delim_pos + 1;
+    }
+
+    return dists;
+}
+
 /**
  * Удаляет пробелы в начале и конце строки
  */
@@ -51,7 +75,7 @@ vector<string_view> Split(string_view string, char delim) {
     size_t pos = 0;
     while ((pos = string.find_first_not_of(' ', pos)) < string.length()) {
         auto delim_pos = string.find(delim, pos);
-        if (delim_pos == string.npos) {
+        if (delim_pos == string_view::npos) {
             delim_pos = string.size();
         }
         if (auto substr = Trim(string.substr(pos, delim_pos - pos)); !substr.empty()) {
@@ -111,8 +135,32 @@ void InputReader::ParseLine(string_view line) {
 void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) const {
     for (const auto& command : commands_) {
         if (command.command == "Stop"s) {
-            auto coords = ParseCoordinates(command.description);
+            auto coords = ParseCoordinates(command.description.substr(0, command.description.find(',', command.description.find(',') + 1)));
             catalogue.AddStop(command.id, coords);
+        }
+    }
+
+    for (const auto& command : commands_) {
+        if (command.command == "Stop"s) {            
+            size_t first_comma_pos = command.description.find(',');
+            size_t second_comma_pos = command.description.find(',', first_comma_pos + 1);
+            auto dists_raw = ""s;
+
+            if (second_comma_pos != string_view::npos) {
+                dists_raw = command.description.substr(second_comma_pos + 1);
+            }
+            
+                auto dists = ParseDistances(dists_raw);
+            const Stop* stop_info = catalogue.GetStopInfo(command.id).value();
+
+            for (const auto& [dest_name, dist] : dists) {
+                const auto* dest_info = catalogue.GetStopInfo(dest_name).value();
+                catalogue.SetDistance(stop_info, dest_info, dist);
+
+                if (catalogue.GetDistance(dest_info, stop_info) == 0) {
+                    catalogue.SetDistance(dest_info, stop_info, dist);
+                }
+            }
         }
     }
 

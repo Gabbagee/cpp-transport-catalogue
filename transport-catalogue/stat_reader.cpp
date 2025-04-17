@@ -21,9 +21,11 @@ void ParseAndPrintStat(const TransportCatalogue& catalogue, string_view request,
 
         const BusInfo& info = route_info.value();
 
-        output << "Bus "s << info.name << ": "s << info.stops_count << " stops on route, "s
-            << info.unique_stops_count << " unique stops, "s
-            << fixed << setprecision(6) << info.route_length << " route length"s << endl;
+        output << "Bus "s << info.name << ": "s 
+            << info.stops_count << " stops on route, "s 
+            << info.unique_stops_count << " unique stops, "s 
+            << info.route_length << " route length, "s 
+            << fixed << setprecision(5) << info.curvature << " curvature"s << endl;
     }
     
     if (request.substr(0, 4) == "Stop"s) {

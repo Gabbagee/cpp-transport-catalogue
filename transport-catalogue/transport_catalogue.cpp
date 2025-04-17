@@ -31,6 +31,18 @@ void TransportCatalogue::AddRoute(const string& name, const vector<string_view>&
     buses_by_name_[name] = &buses_.back();
 }
 
+int TransportCatalogue::ComputeRouteDistance(const vector<const Stop*>& stops, size_t size) const {
+    int length = 0;
+
+    for (size_t i = 0; i < size - 1; ++i) {
+        const Stop* from = stops[i];
+        const Stop* to = stops[i + 1];
+        length += GetDistance(from, to);
+    }
+
+    return length;
+}
+
 optional<BusInfo> TransportCatalogue::GetRouteInfo(const string_view& name) const {
     auto it = buses_by_name_.find(name);
     if (it == buses_by_name_.end()) {
@@ -39,17 +51,20 @@ optional<BusInfo> TransportCatalogue::GetRouteInfo(const string_view& name) cons
 
     const Bus* route = it->second;
     const auto& stops = route->stops;
+    size_t size = stops.size();
     unordered_set<string_view> unique_stops;
-    double length = 0.;
+    double geo_length = 0.;
+    int map_length = ComputeRouteDistance(stops, size);
 
     for (size_t i = 0; i < stops.size() - 1; ++i) {
-        length += ComputeDistance(stops[i]->coords, stops[i + 1]->coords);
+        geo_length += ComputeDistance(stops[i]->coords, stops[i + 1]->coords);
         unique_stops.insert(stops[i]->name);
     }
 
     unique_stops.insert(stops.back()->name);
+    double curvature = (geo_length > 0.) ? map_length / geo_length : 0.;
 
-    return BusInfo{route->name, stops.size(), unique_stops.size(), length};
+    return BusInfo{route->name, size, unique_stops.size(), map_length, curvature};
 }
 
 optional<const set<string>*> TransportCatalogue::GetBusesForStop(const string_view& name) const {
@@ -65,6 +80,28 @@ optional<const set<string>*> TransportCatalogue::GetBusesForStop(const string_vi
     }
 
     return &it2->second;
+}
+
+optional<const Stop*> TransportCatalogue::GetStopInfo(const string_view& name) const {
+    auto it = stops_by_name_.find(name);
+    if (it == stops_by_name_.end()) {
+        return nullopt;
+    }
+
+    return it->second;
+}
+
+void TransportCatalogue::SetDistance(const Stop* from, const Stop* to, int distance) {
+    distances_[{from, to}] = distance;
+}
+
+int TransportCatalogue::GetDistance(const Stop* from, const Stop* to) const {
+    auto it = distances_.find({from, to});
+    if (it != distances_.end()) {
+        return it->second;
+    }
+    
+    return 0;
 }
 
 } // namespace transport_catalogue::database
