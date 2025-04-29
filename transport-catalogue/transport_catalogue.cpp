@@ -1,6 +1,6 @@
 #include "transport_catalogue.h"
 
-#include <unordered_set>
+#include <iterator>
 
 using namespace std;
 
@@ -27,7 +27,11 @@ void TransportCatalogue::AddRoute(const string& name, const vector<string_view>&
         }
     }
 
-    buses_.push_back(move(route));
+    if (!is_circular && !route.stops.empty()) {
+        route.stops.insert(route.stops.end(), next(route.stops.rbegin()), route.stops.rend());
+    }
+
+    buses_.emplace_back(move(route));
     buses_by_name_[name] = &buses_.back();
 }
 
@@ -89,6 +93,33 @@ optional<const Stop*> TransportCatalogue::GetStopInfo(const string_view& name) c
     }
 
     return it->second;
+}
+
+optional<set<const Bus*, BusNameComparator>> TransportCatalogue::GetAllBuses() const {
+    set<const Bus*, BusNameComparator> all_buses;
+    if (buses_by_name_.empty()) {
+        return nullopt;
+    }
+
+    for (const auto& [_, bus_ptr] : buses_by_name_) {
+        all_buses.insert(bus_ptr);
+    }
+    return all_buses;
+}
+
+optional<set<const Stop*, StopNameComparator>> TransportCatalogue::GetAllStops() const {
+    set<const Stop*, StopNameComparator> all_stops;
+
+    for (const auto& [_, bus_ptr] : buses_by_name_) {
+        for (const auto* stop : bus_ptr->stops) {
+            all_stops.insert(stop);
+        }
+    }
+
+    if (all_stops.empty()) {
+        return nullopt;
+    }
+    return all_stops;
 }
 
 void TransportCatalogue::SetDistance(const Stop* from, const Stop* to, int distance) {

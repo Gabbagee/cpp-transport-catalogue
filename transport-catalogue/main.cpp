@@ -1,5 +1,7 @@
-#include "input_reader.h"
-#include "stat_reader.h"
+#include "json.h"
+#include "json_reader.h"
+#include "map_renderer.h"
+#include "svg.h"
 #include "transport_catalogue.h"
 
 #include <iostream>
@@ -8,9 +10,18 @@ using namespace std;
 using namespace transport_catalogue;
 
 int main() {
-    database::TransportCatalogue catalogue;
-    filling::InputReader reader;
+    try {
+        auto document = json::Load(cin);
     
-    reader.ReadBaseRequests(catalogue, cin);
-    retrieving::ReadStatRequests(catalogue, cin, cout);
+        database::TransportCatalogue catalogue;
+        processing::JsonReader reader(catalogue);
+
+        reader.ProcessDocument(document, cout);
+        
+    } catch (const json::ParsingError& e) {
+        cerr << "Error parsing input file: "s << e.what() << endl;   
+    } catch (const exception& e) {
+        cerr << "Exception: "s << e.what() << endl;
+    }
+    return 0;
 }

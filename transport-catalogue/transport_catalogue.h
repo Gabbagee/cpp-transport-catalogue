@@ -6,6 +6,7 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include <unordered_set>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -39,6 +40,18 @@ struct StopPairHasher {
 	}
 };
 
+struct BusNameComparator {
+    bool operator()(const Bus* lhs, const Bus* rhs) const {
+        return lhs->name < rhs->name;
+    }
+};
+
+struct StopNameComparator {
+    bool operator()(const Stop* lhs, const Stop* rhs) const {
+        return lhs->name < rhs->name;
+    }
+};
+
 class TransportCatalogue {
 public:
 	void AddStop(const std::string& name, const Coordinates& coords);
@@ -47,6 +60,8 @@ public:
 	std::optional<BusInfo> GetRouteInfo(const std::string_view& name) const;
 	std::optional<const std::set<std::string>*> GetBusesForStop(const std::string_view& name) const;
 	std::optional<const Stop*> GetStopInfo(const std::string_view& name) const;
+	std::optional<std::set<const Bus*, BusNameComparator>> GetAllBuses() const;
+	std::optional<std::set<const Stop*, StopNameComparator>> GetAllStops() const;
 	void SetDistance(const Stop* from, const Stop* to, int distance);
 	int GetDistance(const Stop* from, const Stop* to) const;
 

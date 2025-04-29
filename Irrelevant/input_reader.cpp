@@ -150,7 +150,7 @@ void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) 
                 dists_raw = command.description.substr(second_comma_pos + 1);
             }
             
-                auto dists = ParseDistances(dists_raw);
+            auto dists = ParseDistances(dists_raw);
             const Stop* stop_info = catalogue.GetStopInfo(command.id).value();
 
             for (const auto& [dest_name, dist] : dists) {
