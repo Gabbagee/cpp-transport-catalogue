@@ -1,3 +1,5 @@
+#include "domain.h"
+#include "json_builder.h"
 #include "request_handler.h"
 
 #include <sstream>
@@ -13,35 +15,48 @@ RequestHandler::RequestHandler(const TransportCatalogue& catalogue)
     : catalogue_(catalogue) {}
 
 const json::Node RequestHandler::HandleRouteRequest(const json::Dict& request) const {
-    json::Dict result;
-    result["request_id"s] = request.at("id"s).AsInt();
+    json::Node result;
+    int id = request.at("id"s).AsInt();
     const auto& name = request.at("name"s).AsString();
     auto route_info = catalogue_.GetRouteInfo(name);
 
     if (!route_info.has_value()) {
-        result["error_message"s] = json::Node{"not found"s};
-        return json::Node{result};
+        return result = json::Builder{}
+                    .StartDict()
+                        .Key("request_id").Value(id)
+                        .Key("error_message").Value("not found")
+                    .EndDict()
+                .Build();
     }
 
     const BusInfo& info = route_info.value();
 
-    result["curvature"] = info.curvature;
-    result["route_length"] = info.route_length;
-    result["stop_count"] = static_cast<int>(info.stops_count);
-    result["unique_stop_count"] = static_cast<int>(info.unique_stops_count);
+    result = json::Builder{}
+                    .StartDict()
+                        .Key("request_id").Value(id)
+                        .Key("curvature").Value(info.curvature)
+                        .Key("route_length").Value(info.route_length)
+                        .Key("stop_count").Value(static_cast<int>(info.stops_count))
+                        .Key("unique_stop_count").Value(static_cast<int>(info.unique_stops_count))
+                    .EndDict()
+                .Build();
 
-    return json::Node{result};
+    return result;
 }
 
 const json::Node RequestHandler::HandleStopRequest(const json::Dict& request) const {
-    json::Dict result;
-    result["request_id"s] = request.at("id"s).AsInt();
+    json::Node result;
+    int id = request.at("id"s).AsInt();
     const auto& name = request.at("name"s).AsString();
     auto buses_ptr = catalogue_.GetBusesForStop(name);
 
     if (!buses_ptr.has_value()) {
-        result["error_message"s] = json::Node{"not found"s};
-        return json::Node{result};
+        return result = json::Builder{}
+                    .StartDict()
+                        .Key("request_id").Value(id)
+                        .Key("error_message").Value("not found")
+                    .EndDict()
+                .Build();
     }
 
     json::Array buses_list;
@@ -51,22 +66,33 @@ const json::Node RequestHandler::HandleStopRequest(const json::Dict& request) co
         buses_list.emplace_back(bus);
     }
 
-    result["buses"s] = move(buses_list);
+    result = json::Builder{}
+                    .StartDict()
+                        .Key("request_id").Value(id)
+                        .Key("buses").Value(move(buses_list))
+                    .EndDict()
+                .Build();
 
-    return json::Node{result};
+    return result;
 }
 
 const json::Node RequestHandler::HandleMapRequest(const json::Dict& request, MapRenderer& renderer) const {
-    json::Dict result;
-    result["request_id"s] = request.at("id"s).AsInt();
+    json::Node result;
+    int id = request.at("id"s).AsInt();
 
     svg::Document svg_map = renderer.RenderMap();
 
     ostringstream strm;
     svg_map.Render(strm);
-    result["map"s] = strm.str();
 
-    return json::Node{result};
+    result = json::Builder{}
+                .StartDict()
+                    .Key("request_id").Value(id)
+                    .Key("map").Value(strm.str())
+                .EndDict()
+            .Build();
+
+    return result;
 }
 
 } // namespace transport_catalogue::requesting

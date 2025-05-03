@@ -1,5 +1,6 @@
 #pragma once
 
+#include "domain.h"
 #include "geo.h"
 #include "svg.h"
 #include "transport_catalogue.h"
@@ -72,7 +73,7 @@ public:
     }
 
     // Проецирует широту и долготу в координаты внутри SVG-изображения
-    Point operator()(geo::Coordinates coords) const {
+    Point operator()(Coordinates coords) const {
         return {
             (coords.lng - min_lon_) * zoom_coeff_ + padding_,
             (max_lat_ - coords.lat) * zoom_coeff_ + padding_

@@ -113,6 +113,8 @@ public:
 
     const Value& GetValue() const;
 
+    Value& GetValue();
+
     bool operator==(const Node& other) const;
 
     bool operator!=(const Node& other) const;

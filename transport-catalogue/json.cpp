@@ -294,6 +294,10 @@ const Node::Value& Node::GetValue() const {
     return value_;
 }
 
+Node::Value& Node::GetValue() {
+    return value_;
+}
+
 bool Node::operator==(const Node& other) const {
     return value_ == other.value_;
 }
