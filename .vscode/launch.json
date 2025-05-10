@@ -5,7 +5,7 @@
       "name": "C/C++ Runner: Debug Session",
       "type": "cppdbg",
       "request": "launch",
-      "args": ["<", "${workspaceFolder}/s10_final_opentest_/s10_final_opentest_3.json", ">", "${workspaceFolder}/output_map.json"],
+      "args": ["<", "${workspaceFolder}/input_map_3.json", ">", "${workspaceFolder}/output_map.json"],
       "stopAtEntry": false,
       "externalConsole": true,
       "cwd": "d:/Artem/Cpp-Course/cpp-transport-catalogue/transport-catalogue",

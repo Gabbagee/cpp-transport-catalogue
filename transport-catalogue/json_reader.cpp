@@ -68,7 +68,7 @@ void JsonReader::ProcessBaseRequests(const json::Document& doc) {
     }
 }
 
-json::Array JsonReader::ProcessStatRequests(const json::Document& doc, MapRenderer& renderer) const {
+json::Array JsonReader::ProcessStatRequests(const json::Document& doc, MapRenderer& renderer, const Router& router) const {
     const json::Node& root = doc.GetRoot().AsMap().at("stat_requests"s);
     const auto& stat_requests = root.AsArray();
     json::Array result;
@@ -83,6 +83,8 @@ json::Array JsonReader::ProcessStatRequests(const json::Document& doc, MapRender
             result.push_back(handler_.HandleRouteRequest(request_map));
         } else if (type == "Map"s) {
             result.push_back(handler_.HandleMapRequest(request_map, renderer));
+        } else if (type == "Route"s) {
+            result.push_back(handler_.HandleRoutingRequest(request_map, router));
         }
     }
     return result;
@@ -153,12 +155,27 @@ RenderSettings JsonReader::ProcessRenderSettings(const json::Document& doc) cons
     return result;
 }
 
+RoutingSettings JsonReader::ProcessRouterSettings(const json::Document& doc) const {
+    const json::Node& root = doc.GetRoot().AsMap().at("routing_settings"s);
+    const auto& routing_settings = root.AsMap();
+    RoutingSettings result;
+
+    result.bus_velocity = routing_settings.at("bus_velocity"s).AsDouble();
+    result.bus_wait_time = routing_settings.at("bus_wait_time"s).AsInt();
+
+    return result;
+}
+
 void JsonReader::ProcessDocument(const json::Document& doc, ostream& output) {
     ProcessBaseRequests(doc);
     RenderSettings render_settings = ProcessRenderSettings(doc);
+    RoutingSettings routing_settings = ProcessRouterSettings(doc);
 
     MapRenderer renderer(render_settings, catalogue_);
-    json::Array stat_responses = ProcessStatRequests(doc, renderer);
+    Router router(routing_settings, catalogue_);
+    router.BuildGraph();
+
+    json::Array stat_responses = ProcessStatRequests(doc, renderer, router);
 
     json::Print(json::Document(stat_responses), output);
 }
