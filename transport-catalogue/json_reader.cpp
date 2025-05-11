@@ -173,7 +173,6 @@ void JsonReader::ProcessDocument(const json::Document& doc, ostream& output) {
 
     MapRenderer renderer(render_settings, catalogue_);
     Router router(routing_settings, catalogue_);
-    router.BuildGraph();
 
     json::Array stat_responses = ProcessStatRequests(doc, renderer, router);
 

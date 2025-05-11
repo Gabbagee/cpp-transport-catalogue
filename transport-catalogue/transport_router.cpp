@@ -5,6 +5,8 @@ using namespace std;
 
 namespace transport_catalogue::routing {
 
+constexpr double KPHtoMPM = 1000.0 / 60.0;
+
 void Router::BuildGraph() {
     auto all_buses = catalogue_.GetAllBuses();
     if (!all_buses.has_value()) {
@@ -60,14 +62,15 @@ void Router::BuildEdgesForBuses(const set<const Bus*, BusNameComparator>& buses,
                                 j - i,
                                 stop_ids_.at(stop_from->name) + 1,
                                 stop_ids_.at(stop_to->name),
-                                static_cast<double>(dist_sum) / (settings_.bus_velocity * (100.0 / 6.0))
+                                static_cast<double>(dist_sum) / (settings_.bus_velocity * KPHtoMPM)
                 });
             }
         }
     }
 }
 
-const optional<graph::Router<double>::RouteInfo> Router::FindRoute(const string_view stop_from, const string_view stop_to) const {
+const optional<RouteData> Router::FindRoute(const string_view stop_from, const string_view stop_to) const {
+    RouteData route_data;
     auto from_it = stop_ids_.find(string(stop_from));
     auto to_it = stop_ids_.find(string(stop_to));
 
@@ -77,11 +80,18 @@ const optional<graph::Router<double>::RouteInfo> Router::FindRoute(const string_
 
     graph::VertexId from_id = from_it->second;
     graph::VertexId to_id = to_it->second;
-	return router_->BuildRoute(from_id, to_id);
-}
+    const auto& route_info = router_->BuildRoute(from_id, to_id);
 
-const graph::DirectedWeightedGraph<double>& Router::GetGraph() const {
-	return graph_;
+    if (!route_info.has_value()) {
+        return nullopt;
+    }
+
+    route_data.total_time = route_info->weight;
+    for (const auto& edge_id : route_info->edges) {
+        route_data.edges.push_back(&graph_.GetEdge(edge_id));
+    }
+
+    return route_data;
 }
 
 } // namespace transport_catalogue::routing
